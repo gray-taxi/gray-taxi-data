@@ -5,7 +5,15 @@ NYC Yellow Taxi 2026-05 — 전처리 파이프라인
 """
 
 import pandas as pd
-import numpy as np
+
+import logging
+
+logging.basicConfig(
+    level = logging.INFO,
+    format = "%(asctime)s [%(levelname)s %(message)s]",
+    datefmt = "%H:%M:%S"
+)
+logger = logging.getLogger("taxi_eda")
 
 # ──────────────────────────────────────────────
 # 0. 데이터 로드
@@ -13,9 +21,7 @@ import numpy as np
 PARQUET_PATH = "./data/raw/yellow_tripdata_2026-05.parquet"
 
 df = pd.read_parquet(PARQUET_PATH)
-print(f"[로드 완료] 행: {len(df):,}  열: {df.shape[1]}")
-
-
+logger.info(f"[로드 완료] 행: {len(df):,}  열: {df.shape[1]}")
 # ══════════════════════════════════════════════
 # STEP 1. 파생 변수 생성 — trip_duration_min
 # ══════════════════════════════════════════════
@@ -26,7 +32,7 @@ df["trip_duration_min"] = (
     df["tpep_dropoff_datetime"] - df["tpep_pickup_datetime"]
 ).dt.total_seconds() / 60.0
 
-print(f"\n[STEP 1] trip_duration_min 파생 변수 생성 완료")
+logger.info(f"[STEP 1] trip_duration_min 파생 변수 생성 완료")
 
 
 # ══════════════════════════════════════════════
@@ -54,19 +60,19 @@ structural_missing_cols = [
 missing_mask = df[structural_missing_cols[0]].isna()
 payment0_mask = df["payment_type"] == 0
 overlap = (missing_mask & payment0_mask).sum()
-print(f"\n[STEP 2] 구조적 결측 교차검증")
-print(f"  - 결측 행 수        : {missing_mask.sum():,}")
-print(f"  - payment_type=0 행 : {payment0_mask.sum():,}")
-print(f"  - 두 조건 동시 충족  : {overlap:,}")
-print(f"  - 결측 중 payment=0 비율: {overlap / missing_mask.sum() * 100:.2f}%")
+logger.info(f"[STEP 2] 구조적 결측 교차검증")
+logger.info(f"  - 결측 행 수        : {missing_mask.sum():,}")
+logger.info(f"  - payment_type=0 행 : {payment0_mask.sum():,}")
+logger.info(f"  - 두 조건 동시 충족  : {overlap:,}")
+logger.info(f"  - 결측 중 payment=0 비율: {overlap / missing_mask.sum() * 100:.2f}%")
 
 # 결측이 payment_type=0과 완전히 일치하면 해당 레코드 전체 제거
 # (두 비율이 100%에 가까울수록 단순 dropna가 안전)
 before = len(df)
 df = df.dropna(subset=structural_missing_cols)
 after = len(df)
-print(f"  → 구조적 결측 행 제거: {before - after:,}건 ({(before - after) / before * 100:.2f}%)")
-print(f"  → 잔여 행: {after:,}")
+logger.info(f"  → 구조적 결측 행 제거: {before - after:,}건 ({(before - after) / before * 100:.2f}%)")
+logger.info(f"  → 잔여 행: {after:,}")
 
 
 # ══════════════════════════════════════════════
@@ -83,8 +89,8 @@ date_mask = (
 )
 df = df[date_mask].copy()
 after = len(df)
-print(f"\n[STEP 3] 날짜 범위 필터 (2026-05만 유지)")
-print(f"  → 제거: {before - after:,}건  잔여: {after:,}")
+logger.info(f"[STEP 3] 날짜 범위 필터 (2026-05만 유지)")
+logger.info(f"  → 제거: {before - after:,}건  잔여: {after:,}")
 
 
 # ══════════════════════════════════════════════
@@ -109,8 +115,8 @@ df = df[
     (df["trip_duration_min"] <= DURATION_UPPER)
 ].copy()
 after = len(df)
-print(f"\n[STEP 4] 운행 시간 필터 (0 < duration <= {DURATION_UPPER}분)")
-print(f"  → 제거: {before - after:,}건  잔여: {after:,}")
+logger.info(f"[STEP 4] 운행 시간 필터 (0 < duration <= {DURATION_UPPER}분)")
+logger.info(f"  → 제거: {before - after:,}건  잔여: {after:,}")
 
 
 # ══════════════════════════════════════════════
@@ -131,8 +137,8 @@ df = df[
     (df["trip_distance"] <= DISTANCE_UPPER)
 ].copy()
 after = len(df)
-print(f"\n[STEP 5] 운행 거리 필터 (0 < distance <= {DISTANCE_UPPER}마일)")
-print(f"  → 제거: {before - after:,}건  잔여: {after:,}")
+logger.info(f"[STEP 5] 운행 거리 필터 (0 < distance <= {DISTANCE_UPPER}마일)")
+logger.info(f"  → 제거: {before - after:,}건  잔여: {after:,}")
 
 
 # ══════════════════════════════════════════════
@@ -157,8 +163,8 @@ df = df[
     (df["congestion_surcharge"] >= 0)  # 혼잡 통행료 음수 제거 (§3 min=-2.5)
 ].copy()
 after = len(df)
-print(f"\n[STEP 6] 요금·금액 이상치 필터")
-print(f"  → 제거: {before - after:,}건  잔여: {after:,}")
+logger.info(f"[STEP 6] 요금·금액 이상치 필터")
+logger.info(f"  → 제거: {before - after:,}건  잔여: {after:,}")
 
 
 # ══════════════════════════════════════════════
@@ -176,8 +182,8 @@ df = df[
     (df["passenger_count"] <= 6)     # 7명 이상 제거 (§4: NYC 최대 정원 초과)
 ].copy()
 after = len(df)
-print(f"\n[STEP 7] 승객 수 필터 (1 <= passenger_count <= 6)")
-print(f"  → 제거: {before - after:,}건  잔여: {after:,}")
+logger.info(f"[STEP 7] 승객 수 필터 (1 <= passenger_count <= 6)")
+logger.info(f"  → 제거: {before - after:,}건  잔여: {after:,}")
 
 
 # ══════════════════════════════════════════════
@@ -202,8 +208,8 @@ df = df[
     df["payment_type"].isin(VALID_PAYMENT_TYPES)  # payment_type=0 재차 제거 (§4)
 ].copy()
 after = len(df)
-print(f"\n[STEP 8] 비표준 코드값 필터 (RatecodeID, payment_type)")
-print(f"  → 제거: {before - after:,}건  잔여: {after:,}")
+logger.info(f"[STEP 8] 비표준 코드값 필터 (RatecodeID, payment_type)")
+logger.info(f"  → 제거: {before - after:,}건  잔여: {after:,}")
 
 
 # ══════════════════════════════════════════════
@@ -229,8 +235,8 @@ df = df[
     (df["average_speed_mph"] <= SPEED_UPPER)
 ].copy()
 after = len(df)
-print(f"\n[STEP 9A] 속도 기반 2차 필터 ({SPEED_LOWER} <= speed <= {SPEED_UPPER} mph)")
-print(f"  → 제거: {before - after:,}건  잔여: {after:,}")
+logger.info(f"[STEP 9A] 속도 기반 2차 필터 ({SPEED_LOWER} <= speed <= {SPEED_UPPER} mph)")
+logger.info(f"  → 제거: {before - after:,}건  잔여: {after:,}")
 
 # (C) 시간대 변수 생성
 # 근거: §7-3 "pickup_hour, pickup_day_of_week 추출하여
@@ -252,8 +258,8 @@ def classify_time_period(hour):
 
 df["time_period"] = df["pickup_hour"].apply(classify_time_period)
 
-print(f"\n[STEP 9B] 파생 변수 생성 완료")
-print(f"  추가 컬럼: average_speed_mph, pickup_hour, pickup_day_of_week, is_weekend, time_period")
+logger.info(f"[STEP 9B] 파생 변수 생성 완료")
+logger.info(f"  추가 컬럼: average_speed_mph, pickup_hour, pickup_day_of_week, is_weekend, time_period")
 
 
 # ══════════════════════════════════════════════
@@ -269,18 +275,18 @@ print(f"  추가 컬럼: average_speed_mph, pickup_hour, pickup_day_of_week, is_
 #     잔여 결측이 있을 경우 대체 없이 제거.
 
 remaining_flag_missing = df["store_and_fwd_flag"].isna().sum()
-print(f"\n[STEP 10] store_and_fwd_flag 잔여 결측: {remaining_flag_missing:,}건")
+logger.info(f"[STEP 10] store_and_fwd_flag 잔여 결측: {remaining_flag_missing:,}건")
 if remaining_flag_missing > 0:
     # 구조적 결측 제거 후에도 남은 결측 → 대체 없이 제거 (§7-1 지침)
     df = df.dropna(subset=["store_and_fwd_flag"]).copy()
-    print(f"  → {remaining_flag_missing:,}건 추가 제거 (대체 없이 삭제)")
+    logger.info(f"  → {remaining_flag_missing:,}건 추가 제거 (대체 없이 삭제)")
 else:
-    print(f"  → 잔여 결측 없음, 추가 처리 불필요")
+    logger.info(f"  → 잔여 결측 없음, 추가 처리 불필요")
 
 # 문자열 Y/N을 이진 정수로 인코딩 (모델 학습 편의)
 # Y(오프라인 저장 후 전송)=1, N(실시간 전송)=0
 df["store_and_fwd_flag"] = (df["store_and_fwd_flag"] == "Y").astype(int)
-print(f"  → store_and_fwd_flag: Y→1, N→0 인코딩 완료")
+logger.info(f"  → store_and_fwd_flag: Y→1, N→0 인코딩 완료")
 
 
 # ══════════════════════════════════════════════
@@ -298,7 +304,7 @@ categorical_cols = [
 for col in categorical_cols:
     df[col] = df[col].astype("category")
 
-print(f"\n[STEP 11] 범주형 타입 변환 완료: {categorical_cols}")
+logger.info(f"[STEP 11] 범주형 타입 변환 완료: {categorical_cols}")
 
 
 # ══════════════════════════════════════════════
@@ -306,21 +312,23 @@ print(f"\n[STEP 11] 범주형 타입 변환 완료: {categorical_cols}")
 # ══════════════════════════════════════════════
 original_count = 4_090_836  # EDA_Report.md §1: 총 행 수 4,090,836
 
-print("\n" + "=" * 55)
-print("전처리 완료 요약")
-print("=" * 55)
-print(f"원본 행 수    : {original_count:>12,}")
-print(f"최종 행 수    : {len(df):>12,}")
-print(f"제거 행 수    : {original_count - len(df):>12,}")
-print(f"데이터 잔존율 : {len(df) / original_count * 100:>11.2f}%")
-print(f"최종 컬럼 수  : {df.shape[1]:>12}")
-print("=" * 55)
-print("\n최종 컬럼 목록:")
-print(df.dtypes.to_string())
+summary_lines = [
+    "=" * 55,
+    "전처리 완료 요약",
+    "=" * 55,
+    f"원본 행 수    : {original_count:>12,}",
+    f"최종 행 수    : {len(df):>12,}",
+    f"제거 행 수    : {original_count - len(df):>12,}",
+    f"데이터 잔존율 : {len(df) / original_count * 100:>11.2f}%",
+    f"최종 컬럼 수  : {df.shape[1]:>12}",
+    "=" * 55,
+]
+logger.info("\n" + "\n".join(summary_lines))
+logger.info(f"최종 컬럼 목록:\n{df.dtypes.to_string()}")
 
 # ──────────────────────────────────────────────
 # 전처리 결과 저장
 # ──────────────────────────────────────────────
 OUTPUT_PATH = "./data/processed/yellow_tripdata_2026-05_clean.parquet"
 df.to_parquet(OUTPUT_PATH, index=False)
-print(f"\n[저장 완료] {OUTPUT_PATH}")
+logger.info(f"[저장 완료] {OUTPUT_PATH}")
