@@ -86,11 +86,3 @@ assert missing_summary_pd["missing_count"].sort_index().equals(
     missing_summary_pl["missing_count"].sort_index()
 ), "Pandas와 Polars의 결측치 집계가 일치하지 않습니다."
 logger.info("Pandas / Polars 결측치 집계 일치 확인 완료")
-
-# 5개 컬럼(passenger_count, RatecodeID, store_and_fwd_flag,
-# congestion_surcharge, Airport_fee)이 정확히 동일한 건수로 결측 -> 구조적 결측 의심
-structural_missing_cols = [
-    "passenger_count", "RatecodeID", "store_and_fwd_flag",
-    "congestion_surcharge", "Airport_fee",
-]
-
