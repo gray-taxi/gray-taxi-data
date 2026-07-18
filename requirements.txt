@@ -1,7 +1,8 @@
-pandas>=2.0
+pandas
+polars
 pyarrow
-numpy
-matplotlib
 seaborn
-jupyter
-nbstripout
+plotly
+scikit-learn
+scipy
+joblib
