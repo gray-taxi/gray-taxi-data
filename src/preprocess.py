@@ -44,7 +44,7 @@ def preprocess_data(raw_path: str, output_path: str, summary_path: str = None) -
     df["trip_duration_min"] = (
         df["tpep_dropoff_datetime"] - df["tpep_pickup_datetime"]
     ).dt.total_seconds() / 60.0
-    logger.info(f"[STEP 1] trip_duration_min 파생 변수 생성 완료")
+    logger.info("[STEP 1] trip_duration_min 파생 변수 생성 완료")
 
     # STEP 2. 중복 레코드 제거
     before = len(df)
@@ -159,11 +159,11 @@ def preprocess_data(raw_path: str, output_path: str, summary_path: str = None) -
             return "daytime"
 
     df["time_period"] = df["pickup_hour"].apply(classify_time_period)
-    logger.info(f"[STEP 10B] 파생 변수 생성 완료 (average_speed_mph, pickup_hour, pickup_day_of_week, is_weekend, time_period)")
+    logger.info("[STEP 10B] 파생 변수 생성 완료 (average_speed_mph, pickup_hour, pickup_day_of_week, is_weekend, time_period)")
 
     # STEP 11. store_and_fwd_flag 이진 정수형 인코딩
     df["store_and_fwd_flag"] = (df["store_and_fwd_flag"] == "Y").astype(int)
-    logger.info(f"[STEP 11] store_and_fwd_flag 인코딩 완료 (Y->1, N->0)")
+    logger.info("[STEP 11] store_and_fwd_flag 인코딩 완료 (Y->1, N->0)")
 
     # STEP 12. 데이터 타입 최적화
     categorical_cols = ["VendorID", "RatecodeID", "payment_type", "PULocationID", "DOLocationID", "time_period"]

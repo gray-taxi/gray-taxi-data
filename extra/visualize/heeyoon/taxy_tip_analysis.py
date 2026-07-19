@@ -18,9 +18,7 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 from matplotlib.ticker import StrMethodFormatter
-import platform
 import os
 
 # ==================================================

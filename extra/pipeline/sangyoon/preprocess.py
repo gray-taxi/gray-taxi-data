@@ -32,7 +32,7 @@ df["trip_duration_min"] = (
     df["tpep_dropoff_datetime"] - df["tpep_pickup_datetime"]
 ).dt.total_seconds() / 60.0
 
-logger.info(f"[STEP 1] trip_duration_min 파생 변수 생성 완료")
+logger.info("[STEP 1] trip_duration_min 파생 변수 생성 완료")
 
 
 # ══════════════════════════════════════════════
@@ -60,7 +60,7 @@ structural_missing_cols = [
 missing_mask = df[structural_missing_cols[0]].isna()
 payment0_mask = df["payment_type"] == 0
 overlap = (missing_mask & payment0_mask).sum()
-logger.info(f"[STEP 2] 구조적 결측 교차검증")
+logger.info("[STEP 2] 구조적 결측 교차검증")
 logger.info(f"  - 결측 행 수        : {missing_mask.sum():,}")
 logger.info(f"  - payment_type=0 행 : {payment0_mask.sum():,}")
 logger.info(f"  - 두 조건 동시 충족  : {overlap:,}")
@@ -89,7 +89,7 @@ date_mask = (
 )
 df = df[date_mask].copy()
 after = len(df)
-logger.info(f"[STEP 3] 날짜 범위 필터 (2026-05만 유지)")
+logger.info("[STEP 3] 날짜 범위 필터 (2026-05만 유지)")
 logger.info(f"  → 제거: {before - after:,}건  잔여: {after:,}")
 
 
@@ -163,7 +163,7 @@ df = df[
     (df["congestion_surcharge"] >= 0)  # 혼잡 통행료 음수 제거 (§3 min=-2.5)
 ].copy()
 after = len(df)
-logger.info(f"[STEP 6] 요금·금액 이상치 필터")
+logger.info("[STEP 6] 요금·금액 이상치 필터")
 logger.info(f"  → 제거: {before - after:,}건  잔여: {after:,}")
 
 
@@ -182,7 +182,7 @@ df = df[
     (df["passenger_count"] <= 6)     # 7명 이상 제거 (§4: NYC 최대 정원 초과)
 ].copy()
 after = len(df)
-logger.info(f"[STEP 7] 승객 수 필터 (1 <= passenger_count <= 6)")
+logger.info("[STEP 7] 승객 수 필터 (1 <= passenger_count <= 6)")
 logger.info(f"  → 제거: {before - after:,}건  잔여: {after:,}")
 
 
@@ -208,7 +208,7 @@ df = df[
     df["payment_type"].isin(VALID_PAYMENT_TYPES)  # payment_type=0 재차 제거 (§4)
 ].copy()
 after = len(df)
-logger.info(f"[STEP 8] 비표준 코드값 필터 (RatecodeID, payment_type)")
+logger.info("[STEP 8] 비표준 코드값 필터 (RatecodeID, payment_type)")
 logger.info(f"  → 제거: {before - after:,}건  잔여: {after:,}")
 
 
@@ -258,8 +258,8 @@ def classify_time_period(hour):
 
 df["time_period"] = df["pickup_hour"].apply(classify_time_period)
 
-logger.info(f"[STEP 9B] 파생 변수 생성 완료")
-logger.info(f"  추가 컬럼: average_speed_mph, pickup_hour, pickup_day_of_week, is_weekend, time_period")
+logger.info("[STEP 9B] 파생 변수 생성 완료")
+logger.info("  추가 컬럼: average_speed_mph, pickup_hour, pickup_day_of_week, is_weekend, time_period")
 
 
 # ══════════════════════════════════════════════
@@ -281,12 +281,12 @@ if remaining_flag_missing > 0:
     df = df.dropna(subset=["store_and_fwd_flag"]).copy()
     logger.info(f"  → {remaining_flag_missing:,}건 추가 제거 (대체 없이 삭제)")
 else:
-    logger.info(f"  → 잔여 결측 없음, 추가 처리 불필요")
+    logger.info("  → 잔여 결측 없음, 추가 처리 불필요")
 
 # 문자열 Y/N을 이진 정수로 인코딩 (모델 학습 편의)
 # Y(오프라인 저장 후 전송)=1, N(실시간 전송)=0
 df["store_and_fwd_flag"] = (df["store_and_fwd_flag"] == "Y").astype(int)
-logger.info(f"  → store_and_fwd_flag: Y→1, N→0 인코딩 완료")
+logger.info("  → store_and_fwd_flag: Y→1, N→0 인코딩 완료")
 
 
 # ══════════════════════════════════════════════
