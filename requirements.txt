@@ -6,3 +6,5 @@ plotly
 scikit-learn
 scipy
 joblib
+Jinja2
+tabulate
