@@ -23,14 +23,9 @@ gray-taxi-data/
 │   └── report.py                                  # Jinja2 기반 report.md 자동 생성
 ├── templates/
 │   └── report_template.md.j2                      # 보고서 자동 생성용 Jinja2 템플릿
-├── trash/                                         # 팀원별 개별 초안 작업물 보관 (더 이상 유지보수하지 않음)
+├── tests/                                         # src/ 모듈에 대한 pytest 단위 테스트
 ├── requirements.txt
 └── report.md                                      # 자동 렌더링된 최종 분석 및 모델 성능 보고서
-```
-
-`trash/`에는 팀원 5명(bonjoon, sangyoon, jeongmungi, heewon, heeyoon)이 각자 진행했던 개별 스크립트/노트북 원본이 보존되어 있습니다. 최종 제출물은 이를 하나의 파이프라인으로 통합·정리한 위 구조이며, ML Pipeline 대표 주제는 **요금(fare_amount) 예측**으로 수렴했습니다.
-
----
 
 ## 💻 개발 환경 구축
 
@@ -64,14 +59,19 @@ python src/report.py
 
 ---
 
-## 👥 팀 구성 및 역할
+## 🧪 테스트
 
-| 담당 | 원래 작업 | 최종 반영 |
-| :--- | :--- | :--- |
-| sangyoon | 데이터 전처리, Pandas/Polars 로딩 비교, 정체예측·공항요금제 판별 모델 | 전처리·로딩 비교 로직을 `src/preprocess.py`, `src/compare_loading.py`로 통합 반영 |
-| jeongmungi | 시각화 노트북, 통계분석 노트북, 요금예측(Ridge) ML Pipeline, report.py 초안 | **대표 주제로 채택** — `notebooks/`, `src/pipeline.py`, `src/report.py`, `templates/`의 뼈대로 반영 |
-| bonjoon | 높은 팁 여부 예측 (RandomForest) | 최종 리포트에서는 생략 (`trash/pipeline/bonjoon/`에 원본 보존) |
-| heewon | 기술통계·상관계수·t-test | 최종 리포트에서는 생략 (`trash/visualize/heewon/`에 원본 보존) |
-| heeyoon | Seaborn/Plotly 시각화 | 최종 리포트에서는 생략 (`trash/visualize/heeyoon/`에 원본 보존) |
+`src/` 각 모듈에 대한 pytest 단위 테스트가 `tests/`에 있습니다. 실제 대용량 parquet 대신
+작은 합성 데이터를 사용해 빠르게 실행되며, 핵심 기능(정상 경로 + 파일 없음 등
+기본 예외 상황)이 정상 동작하는지 확인합니다.
 
-팀 최종 산출물은 **요금 예측 하나의 주제로 수렴**하도록 결정되어, 나머지 개별 분석(높은 팁 예측, 정체예측, 공항요금제 판별)은 `report.md`에 포함하지 않았습니다. 해당 코드는 `trash/`에 원형 그대로 보존되어 있습니다.
+```bash
+pytest tests/ -v
+```
+
+| 파일 | 확인 내용 |
+| :--- | :--- |
+| `tests/test_preprocess.py` | 중복·구조적결측·이상치 행 제거, 파생변수 생성, 요약 파일 저장, 원본파일 없을 때 처리 |
+| `tests/test_compare_loading.py` | Pandas/Polars 비교 결과 저장, 원본파일 없을 때 처리 |
+| `tests/test_pipeline.py` | Pipeline 구성, 학습·평가 지표(r2/mse/rmse/mae), joblib·JSON 저장/재로딩 |
+| `tests/test_report.py` | 파일 읽기 헬퍼(`_read_text`/`_read_json`), Jinja2 템플릿 렌더링 |
