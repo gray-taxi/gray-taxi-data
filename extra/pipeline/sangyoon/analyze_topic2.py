@@ -92,7 +92,7 @@ logger.info(f"  → Welch t-test: t={t_stat:.3f}, p={p_val:.3e}, Cohen's d={cohe
 if p_val < 0.05:
     logger.info(f"  → 해석: p<0.05 → 유의미한 차이 있음. Cohen's d={cohend:.2f} → 실질적 차이 크기")
 else:
-    logger.info(f"  → 해석: p>=0.05 → 유의미한 차이 없음 (우연 가능)")
+    logger.info("  → 해석: p>=0.05 → 유의미한 차이 없음 (우연 가능)")
 
 
 # ══════════════════════════════════════════════

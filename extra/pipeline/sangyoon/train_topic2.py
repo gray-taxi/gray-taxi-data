@@ -8,7 +8,6 @@
 import os
 
 import joblib
-import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
@@ -80,7 +79,7 @@ def evaluate_pipeline(pipeline: Pipeline, X_test, y_test):
     roc = roc_auc_score(y_test, y_prob)
     pr = average_precision_score(y_test, y_prob)
 
-    print(f"\n=== 평가 지표 ===")
+    print("\n=== 평가 지표 ===")
     print(f"Accuracy : {acc:.4f}")
     print(f"F1-score : {f1:.4f}")
     print(f"ROC-AUC  : {roc:.4f}")
