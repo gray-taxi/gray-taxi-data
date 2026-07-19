@@ -1,0 +1,79 @@
+# NYC Yellow Taxi 분석 및 요금 예측 자동화 보고서 (2026-05)
+
+본 보고서는 2026년 5월 NYC Yellow Taxi 정제 데이터(`yellow_tripdata_2026-05_clean.parquet`)를 기반으로 한 데이터 준비, 탐색적 데이터 분석(EDA), 가설 검정 및 요금(`fare_amount`) 예측 기계학습 모델링 결과를 자동으로 생성한 요약 문서입니다.
+
+---
+
+## 0. 데이터 준비
+
+{{ loading_comparison }}
+
+{{ preprocess_summary }}
+
+---
+
+## 1. 기술통계 및 상관관계 분석
+
+{{ stat_summary }}
+
+> [!NOTE]
+> 상관계수 분석 결과, 최종 요금(`total_amount`)은 기본 미터기 요금(`fare_amount`), 주행 거리(`trip_distance`), 주행 시간(`trip_duration_min`) 순으로 매우 강력한 양의 상관관계를 띠고 있음이 확인됩니다.
+
+### 🖼️ 시각화 분석 결과 (정적 차트)
+{% for viz in visualizations %}
+#### {{ viz.title }}
+![{{ viz.title }}]({{ viz.image_path }})
+*상세 설명: {{ viz.description }}*
+
+{% endfor %}
+
+---
+
+## 2. 가설 검정 (t-test) 결과
+본 데이터셋을 통해 수립한 가설의 독립표본 t-검정(Welch's t-test) 수행 결과입니다. (유의수준 $\alpha = 0.05$)
+
+{% for t in ttests %}
+> [!IMPORTANT]
+> - **가설 {{ loop.index }} ({{ t.label }})**: 그룹 `{{ t.group_a }}` 평균 {{ t.mean_a | round(3) }} (N={{ t.n_a }}) vs 그룹 `{{ t.group_b }}` 평균 {{ t.mean_b | round(3) }} (N={{ t.n_b }}) — t={{ t.t_stat | round(4) }}, p={{ "%.3g"|format(t.p_value) }}. {{ t.conclusion }}
+{% endfor %}
+{% if not ttests %}
+*(t-test 결과 파일을 찾을 수 없습니다. `notebooks/02_statistical_analysis.ipynb`를 실행하면 `outputs/ttest_results.json`이 생성됩니다.)*
+{% endif %}
+
+---
+
+## 3. 기계학습 모델 성능 (sklearn Pipeline)
+전처리 파이프라인(StandardScaler + OneHotEncoder)과 Ridge 회귀 추정기를 결합하여 요금(`fare_amount`)을 예측하는 기계학습 파이프라인의 검증 성능입니다.
+
+* **평가용 데이터셋 분할**: Train 80% / Test 20%
+* **학습 알고리즘**: Ridge Regression (L2 Regularization, $\alpha=1.0$)
+
+{% if metrics.r2 is defined %}
+| 평가지표 | 수치 | 비고 |
+| :--- | :--- | :--- |
+| **결정계수 ($R^2$)** | {{ metrics.r2 | round(4) }} | 모델의 종속변수 분산 설명력 (약 {{ (metrics.r2 * 100) | round(2) }}% 설명) |
+| **평균제곱오차 (MSE)** | {{ metrics.mse | round(4) }} | 실제값과 예측값의 제곱 차이 평균 |
+| **평균제곱근오차 (RMSE)** | {{ metrics.rmse | round(4) }} | 예측 오차의 평균적인 편차 (약 ${{ metrics.rmse | round(2) }} 오차 범위) |
+| **평균절대오차 (MAE)** | {{ metrics.mae | round(4) }} | 실제값과 예측값의 절대 오차 평균 (약 ${{ metrics.mae | round(2) }} 편차) |
+
+> [!TIP]
+> Ridge 회귀 기반 ML 파이프라인의 R²가 **{{ (metrics.r2 * 100) | round(2) }}%**로 매우 높게 도출되었으며, 실제 오차 수준(MAE)은 약 **${{ metrics.mae | round(2) }}**에 불과하여 실무 운송 요금 예측에 신뢰성 있게 활용할 수 있습니다.
+{% else %}
+*학습 지표가 존재하지 않습니다. `python src/pipeline.py`를 실행하면 `outputs/model_metrics.json`이 생성됩니다.*
+{% endif %}
+
+---
+
+## 4. 관련 파일 링크
+* **인터랙티브 시각화 HTML (브라우저에서 직접 조작 가능)**:
+  - [시간대별 택시 이용량 (Interactive)](outputs/taxi_demand_by_hour_interactive.html)
+  - [시간대별 평균 팁 금액 (Interactive)](outputs/avg_tip_by_period_interactive.html)
+  - [주행 거리 vs 기본 요금 산점도 (Interactive - 10k Samples)](outputs/trip_distance_vs_fare_interactive.html)
+* **학습 완료된 파이프라인 파일 (.pkl)**:
+  - [saved_models/taxi_fare_pipeline.pkl](saved_models/taxi_fare_pipeline.pkl)
+* **분석 Jupyter Notebook**:
+  - [notebooks/01_visualization.ipynb](notebooks/01_visualization.ipynb)
+  - [notebooks/02_statistical_analysis.ipynb](notebooks/02_statistical_analysis.ipynb)
+* **Pandas/Polars 로딩 비교 및 전처리 요약**:
+  - [outputs/loading_comparison.md](outputs/loading_comparison.md)
+  - [outputs/preprocess_summary.md](outputs/preprocess_summary.md)

@@ -1,0 +1,15 @@
+pandas
+polars
+pyarrow
+seaborn
+plotly
+scikit-learn
+scipy
+joblib
+Jinja2
+tabulate
+jupyter
+nbconvert
+ipykernel
+nbformat
+pytest
