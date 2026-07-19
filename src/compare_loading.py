@@ -1,8 +1,15 @@
 """
-NYC Yellow Taxi 2026-05 — Pandas vs Polars 로딩 성능 비교
-==========================================================
-raw parquet 파일을 pandas와 polars 양쪽으로 로딩하여 속도·메모리·dtype·결측치
-집계 결과를 비교하고, 그 결과를 outputs/loading_comparison.md로 저장합니다.
+compare_loading.py -- Pandas vs Polars 로딩 성능 비교 모듈
+
+기능: raw parquet 파일을 pandas와 polars 양쪽으로 로딩하여 속도(timeit x3)·
+메모리·dtype·결측치 집계 결과를 비교하고, 그 결과를 outputs/loading_comparison.md로 저장한다.
+
+구성
+  compare_loading -- raw parquet를 pandas/polars로 각각 로드해 성능·dtype·결측치를 비교하고 md로 저장
+
+변경내역
+  2026-07-19  최초 작성
+  2026-07-19  통합 파이프라인용으로 재작성 (경로를 프로젝트 루트 기준으로 수정, 결과 md 저장 기능 추가)
 """
 
 import os
@@ -20,6 +27,7 @@ logging.basicConfig(
 logger = logging.getLogger("compare_loading")
 
 
+# parquet를 pandas/polars 양쪽으로 로드해 속도·메모리·dtype·결측치를 비교하고 결과를 저장한다.
 def compare_loading(parquet_path: str, summary_path: str = None) -> None:
     if not os.path.exists(parquet_path):
         logger.error(f"원본 데이터 파일이 존재하지 않습니다: {parquet_path}")

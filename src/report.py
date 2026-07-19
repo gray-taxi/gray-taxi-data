@@ -1,9 +1,19 @@
 """
-NYC Yellow Taxi 2026-05 — 자동화 보고서 생성 모듈
-=================================================
-이 모듈은 Jinja2를 사용하여 데이터 준비(Pandas/Polars 비교, 전처리 요약),
-시각화, 기술통계/상관분석, t-test, ML 파이프라인 평가지표를 템플릿에 바인딩하여
-최종 report.md 보고서를 자동으로 렌더링하고 생성합니다.
+report.py -- 최종 report.md 자동 생성 모듈
+
+기능: Jinja2를 사용하여 데이터 준비(Pandas/Polars 비교, 전처리 요약), 시각화,
+기술통계/상관분석, t-test, ML 파이프라인 평가지표를 템플릿에 바인딩하여
+최종 report.md 보고서를 자동으로 렌더링하고 생성한다.
+
+구성
+  _read_text            -- 텍스트/마크다운 파일을 읽되, 없으면 안내 문구를 대신 반환
+  _read_json            -- JSON 파일을 파싱하되, 없으면 기본값을 대신 반환
+  generate_final_report -- 각 산출물(md/json)을 모아 report_template.md.j2를 렌더링해 report.md로 저장
+
+변경내역
+  2026-07-19  최초 작성
+  2026-07-19  데이터준비(pandas/polars 비교, 전처리 요약)·t-test JSON 반영 로직 추가,
+              시각화 4종(상관계수 히트맵 포함) 복원
 """
 
 import os
@@ -11,6 +21,7 @@ import json
 from jinja2 import Environment, FileSystemLoader
 
 
+# 파일이 있으면 그대로 읽어 반환하고, 없으면 대체 안내 문구(*(...)*)를 반환한다.
 def _read_text(path: str, missing_msg: str) -> str:
     if not os.path.exists(path):
         return f"*({missing_msg})*"
@@ -18,6 +29,7 @@ def _read_text(path: str, missing_msg: str) -> str:
         return f.read()
 
 
+# 파일이 있으면 JSON을 파싱해 반환하고, 없으면 default 값을 반환한다.
 def _read_json(path: str, default):
     if not os.path.exists(path):
         return default
@@ -25,6 +37,8 @@ def _read_json(path: str, default):
         return json.load(f)
 
 
+# 전처리/로딩비교/통계/시각화/t-test/ML지표 산출물을 모두 읽어 Jinja2 템플릿에 바인딩하고
+# 최종 report.md를 렌더링·저장한다.
 def generate_final_report(
     template_dir: str,
     template_name: str,

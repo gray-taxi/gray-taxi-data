@@ -1,8 +1,18 @@
 """
-NYC Yellow Taxi 2026-05 — ML Pipeline 학습 및 평가 모듈
-=========================================================
-sklearn Pipeline(ColumnTransformer 전처리 + Ridge 회귀)으로 요금(fare_amount)을
-예측하는 모델을 학습, 평가, joblib으로 저장합니다.
+pipeline.py -- 요금(fare_amount) 예측 ML Pipeline 학습 및 평가 모듈
+
+기능: sklearn Pipeline(ColumnTransformer 전처리 + Ridge 회귀)으로 요금(fare_amount)을
+예측하는 모델을 학습·평가하고, 평가지표(JSON)와 학습된 파이프라인(joblib)을 저장한다.
+
+구성
+  load_data          -- 정제된 parquet 데이터를 DataFrame으로 읽어온다
+  build_pipeline      -- 수치/범주 전처리(ColumnTransformer)와 Ridge 회귀를 하나의 Pipeline으로 구성
+  train_and_evaluate  -- train/test 분리 후 학습하고 R2/MSE/RMSE/MAE를 계산해 반환
+  save_pipeline       -- 학습된 Pipeline을 joblib 파일로 저장
+  save_metrics        -- 평가지표 dict를 JSON 파일로 저장
+
+변경내역
+  2026-07-19  최초 작성
 """
 
 import os
@@ -27,12 +37,15 @@ CATEGORICAL_FEATURES = ["VendorID", "RatecodeID", "pickup_hour", "pickup_day_of_
 TARGET_COL = "fare_amount"
 
 
+# 정제된 parquet 데이터를 읽어 DataFrame으로 반환한다. 파일이 없으면 예외를 던진다.
 def load_data(data_path: str) -> pd.DataFrame:
     if not os.path.exists(data_path):
         raise FileNotFoundError(f"데이터 파일이 경로에 존재하지 않습니다: {data_path}")
     return pd.read_parquet(data_path)
 
 
+# 수치형(SimpleImputer+StandardScaler)·범주형(SimpleImputer+OneHotEncoder) 전처리와
+# Ridge 회귀 추정기를 하나의 Pipeline으로 구성한다.
 def build_pipeline() -> Pipeline:
     """전처리(ColumnTransformer) + Ridge 회귀 추정기를 하나의 Pipeline으로 구성합니다."""
     preprocessor = ColumnTransformer(
@@ -53,6 +66,7 @@ def build_pipeline() -> Pipeline:
     ])
 
 
+# 피처/타깃을 분리해 train/test(80/20)로 나누고 Pipeline을 학습한 뒤 R2/MSE/RMSE/MAE를 계산해 반환한다.
 def train_and_evaluate(df: pd.DataFrame) -> Tuple[Pipeline, Dict[str, float]]:
     X = df[NUMERIC_FEATURES + CATEGORICAL_FEATURES].copy()
     for col in CATEGORICAL_FEATURES:
@@ -82,12 +96,14 @@ def train_and_evaluate(df: pd.DataFrame) -> Tuple[Pipeline, Dict[str, float]]:
     return pipeline, metrics
 
 
+# 학습된 Pipeline 객체(전처리+모델)를 joblib으로 직렬화하여 저장한다.
 def save_pipeline(pipeline: Pipeline, save_path: str) -> None:
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     joblib.dump(pipeline, save_path)
     print(f"모델 저장 완료: {save_path}")
 
 
+# 평가지표 dict(r2/mse/rmse/mae)를 JSON 파일로 저장한다.
 def save_metrics(metrics: Dict[str, float], metrics_path: str) -> None:
     os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
     with open(metrics_path, "w", encoding="utf-8") as f:
