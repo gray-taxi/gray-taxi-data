@@ -1,0 +1,21 @@
+
+
+컬럼 20개를 7 / 5 / 8로 완전 분할했습니다. 중복 0개.
+
+주제축컬럼1. 카드 고팁 예측결제·금액payment_type, tip_amount, fare_amount, total_amount, extra, mta_tax, improvement_surcharge2. 운행 정체 예측시간·거리pickup/dropoff_datetime, trip_distance, passenger_count, store_and_fwd_flag3. 공항 요금제 판별지역·부가요금RatecodeID, PULocationID, DOLocationID, tolls_amount, congestion_surcharge, Airport_fee, cbd_congestion_fee, VendorID
+실제로 돌려본 결과 (정제 후 301만건):
+Cohen's dROC-AUCF1baseline acc주제1-0.3090.6670.8680.728
+주제2-0.7940.8220.7190.563주제3+3.0870.9970.9460.967
+이 조합을 고른 이유는 클래스 균형이 72:28 / 44:56 / 3:97로 흩어져서, 지표 해석 문제를 세 방향으로 보여줄 수 있다는 점입니다.
+
+주제1: F1 0.868인데 사실 실패한 모델 — 양성이 72.8%라 F1이 부풀려짐. ROC-AUC 0.667이 진짜 실력. 요금 정보만으로 팁은 예측 안 됨.
+주제3: accuracy 0.996인데 baseline이 0.967 — 불균형에서 accuracy의 함정. F1/PR-AUC가 주 지표.
+주제2: 유일하게 두 지표가 정직하게 작동. baseline 대비 +17.7%p.
+
+통계 분석기술통계(평균·표준편차·분위수) 산출, 변수 간 상관계수 계산, scipy.stats.ttest_ind로 t-test 수행 및 p-value 해석
+기술통계·상관계수 출력, t-test 결과 및 p-value 해석 포함
+
+ü ML Pipelinesklearn.pipeline.Pipeline으로 전처리 + 모델 학습 구성, 평가 지표 출력, joblib으로모델 저장
+§ Pipeline 객체로 전처리+모델 구성, 평가지표(정확도·F1 등) 출력, 모델 파일 저장
+
+할건데, 다음 주제에 대해서 할거야

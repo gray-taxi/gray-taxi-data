@@ -8,3 +8,7 @@ scipy
 joblib
 Jinja2
 tabulate
+jupyter
+nbconvert
+ipykernel
+nbformat

@@ -1,108 +1,77 @@
-# NYC Yellow Taxi 분석 및 ML 예측 통합 파이프라인 (2026-05)
+# NYC Yellow Taxi 분석 및 요금 예측 파이프라인 (2026-05)
 
-본 프로젝트는 2026년 5월 NYC Yellow Taxi 데이터를 정제하고, 기술통계 분석 및 시각화, 그리고 팀원들의 다양한 기계학습(ML) 모델링 결과물을 통합하여 관리 및 자동 분석 보고서(`report.md`) 생성을 일괄 수행할 수 있도록 구성한 통합 파이프라인 프레임워크입니다.
+2026년 5월 NYC Yellow Taxi 데이터를 정제하고, Pandas/Polars 로딩 비교, 시각화(Seaborn·Plotly), 기술통계·상관분석·t-검정, `scikit-learn Pipeline` 기반 요금(`fare_amount`) 예측 모델 학습까지 수행한 뒤 결과를 `report.md`로 자동 생성하는 End-to-End 분석 파이프라인입니다.
 
 ---
 
-## 📂 최종 디렉토리 구조
+## 📂 디렉토리 구조
 
 ```text
 gray-taxi-data/
-├── data/                                 # 정제 데이터 저장 폴더
-│   └── yellow_tripdata_2026-05_clean.parquet  # 정제된 데이터셋 (parquet 형식)
-├── notebooks/                            # 분석 및 EDA 노트북 폴더
-├── outputs/                              # 시각화 이미지 및 모델 평가 데이터
-│   ├── avg_tip_by_period.png             # 시간대별 평균 팁 차트 (정적)
-│   ├── avg_tip_by_period_interactive.html # 시간대별 평균 팁 차트 (인터랙티브)
-│   ├── taxi_demand_by_hour.png           # 시간대별 이용량 차트 (정적)
-│   ├── taxi_demand_by_hour_interactive.html # 시간대별 이용량 차트 (인터랙티브)
-│   ├── model_metrics.json                # 4가지 모델의 통합 평가 지표 (JSON)
-│   └── stat_summary.md                   # 기술통계 및 상관계수 요약 마크다운 캐시
-├── saved_models/                         # 학습이 완료된 4가지 통합 모델 저장소
-│   ├── taxi_airport_pipeline.pkl         # 공항 요금제 판별 이진 분류 모델 (Logistic Regression)
-│   ├── taxi_congestion_pipeline.pkl      # 운행 정체 이진 분류 모델 (Logistic Regression)
-│   ├── taxi_fare_pipeline.pkl            # 요금 예측 회귀 모델 (Ridge)
-│   └── taxi_high_tip_pipeline.pkl        # 높은 팁 여부 예측 분류 모델 (RandomForest)
-├── src/                                  # 공통 실행 모듈 (통합 파이프라인 소스코드)
-│   ├── preprocess.py                     # 데이터 전처리 모듈
-│   ├── pipeline.py                       # ML 모델 파이프라인 학습 및 평가 모듈
-│   └── report.py                         # 최종 마크다운 보고서 자동 생성 모듈
-├── templates/                            # 보고서 생성을 위한 Jinja2 템플릿 폴더
-│   └── report_template.md.j2             # Jinja2 보고서 템플릿 파일
-├── pipeline/                             # (팀원별 레거시/개별 파이프라인 작업 폴더)
-├── visualize/                            # (팀원별 레거시/개별 시각화 작업 폴더)
-├── requirements.txt                      # 통합 패키지 의존성 파일
-└── report.md                             # 자동 렌더링된 최종 분석 및 모델 성능 결과 보고서
+├── data/
+│   ├── raw/yellow_tripdata_2026-05.parquet        # 원본 데이터 (gitignore)
+│   └── processed/yellow_tripdata_2026-05_clean.parquet  # 정제된 데이터셋
+├── notebooks/
+│   ├── 01_visualization.ipynb                     # Seaborn 정적 + Plotly 인터랙티브 시각화
+│   └── 02_statistical_analysis.ipynb              # 기술통계·상관분석·t-검정, 리포트용 요약 export
+├── outputs/                                       # 차트, 통계 요약, 모델 지표 등 산출물
+├── saved_models/                                  # 학습된 sklearn Pipeline (.pkl, gitignore)
+├── src/
+│   ├── preprocess.py                              # 원본 raw 데이터 전처리(결측치·중복·이상치 처리)
+│   ├── compare_loading.py                         # Pandas vs Polars 로딩 성능 비교
+│   ├── pipeline.py                                # ML Pipeline 학습·평가·저장 (요금 예측 Ridge 회귀)
+│   └── report.py                                  # Jinja2 기반 report.md 자동 생성
+├── templates/
+│   └── report_template.md.j2                      # 보고서 자동 생성용 Jinja2 템플릿
+├── trash/                                         # 팀원별 개별 초안 작업물 보관 (더 이상 유지보수하지 않음)
+├── requirements.txt
+└── report.md                                      # 자동 렌더링된 최종 분석 및 모델 성능 보고서
 ```
+
+`trash/`에는 팀원 5명(bonjoon, sangyoon, jeongmungi, heewon, heeyoon)이 각자 진행했던 개별 스크립트/노트북 원본이 보존되어 있습니다. 최종 제출물은 이를 하나의 파이프라인으로 통합·정리한 위 구조이며, ML Pipeline 대표 주제는 **요금(fare_amount) 예측**으로 수렴했습니다.
 
 ---
 
-## 💻 개발 환경 구축 가이드
+## 💻 개발 환경 구축
 
-동일한 환경을 재현하여 모델을 다시 학습시키거나 스크립트를 실행하려면 아래 절차를 따르십시오.
-
-### 1. 가상환경 생성 및 활성화
-
-프로젝트 루트 디렉토리에서 터미널(PowerShell 등)을 열고 가상환경을 생성 및 활성화합니다.
-
-*   **Windows**:
-    ```bash
-    python -m venv venv
-    .\venv\Scripts\activate
-    ```
-*   **macOS / Linux**:
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
-
-### 2. 필수 의존성 패키지 설치
-
-`requirements.txt`에 명시된 필수 패키지 버전을 일괄 설치합니다.
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
 ---
 
-## 🚀 파이프라인 실행 가이드
+## 🚀 파이프라인 실행 순서
 
-전체 단계를 개별적으로 또는 일괄적으로 실행할 수 있습니다. (가상환경이 활성화된 상태에서 실행해 주세요.)
-
-### 1단계: 데이터 전처리 실행 (선택 사항)
-원본 raw 데이터가 `data/raw/` 하위에 위치하는 경우, 데이터 정제 가이드에 따라 클린 데이터셋을 새로 구축합니다. (이미 `data/yellow_tripdata_2026-05_clean.parquet`이 준비되어 있다면 이 단계는 건너뛰어도 좋습니다.)
 ```bash
+# 1. 원본 데이터 전처리 (결측치·중복·이상치 처리 → data/processed/*.parquet, outputs/preprocess_summary.md)
 python src/preprocess.py
-```
 
-### 2단계: 기계학습 모델 통합 학습
-공통 모듈인 `src/pipeline.py`를 사용하여 4가지 예측 타스크 모델을 선택적으로 또는 일괄적으로 학습할 수 있습니다. 학습이 완료되면 평가지표가 `outputs/model_metrics.json`에 업데이트되고 학습 완료된 피클 파일(`.pkl`)이 `saved_models/`에 저장됩니다.
+# 2. Pandas vs Polars 로딩 성능 비교 (→ outputs/loading_comparison.md)
+python src/compare_loading.py
 
-*   **요금 예측 회귀 모델만 학습**:
-    ```bash
-    python src/pipeline.py --task fare
-    ```
-*   **운행 정체 이진 분류 모델만 학습**:
-    ```bash
-    python src/pipeline.py --task congestion
-    ```
-*   **공항요금제 판별 이진 분류 모델만 학습**:
-    ```bash
-    python src/pipeline.py --task airport
-    ```
-*   **높은 팁 여부 예측 이진 분류 모델만 학습**:
-    ```bash
-    python src/pipeline.py --task tip
-    ```
-*   **전체 모델 일괄 학습 (기본 설정)**:
-    ```bash
-    python src/pipeline.py --task all
-    ```
+# 3. 시각화 + 통계분석 노트북 실행 (Jupyter/VS Code에서 직접 실행하거나 아래처럼 일괄 실행)
+jupyter nbconvert --to notebook --execute --inplace notebooks/01_visualization.ipynb
+jupyter nbconvert --to notebook --execute --inplace notebooks/02_statistical_analysis.ipynb
 
-### 3단계: 최종 통합 보고서(`report.md`) 자동 생성
-Jinja2 템플릿 엔진을 사용하여 요약 기술통계 테이블(`outputs/stat_summary.md`), 차트 이미지 경로, 학습 완료된 모델 평가지표(`outputs/model_metrics.json`)를 결합하여 종합 보고서를 프로젝트 루트에 빌드합니다.
-```bash
+# 4. ML Pipeline 학습 (→ outputs/model_metrics.json, saved_models/taxi_fare_pipeline.pkl)
+python src/pipeline.py
+
+# 5. 최종 보고서 자동 생성 (→ report.md)
 python src/report.py
 ```
 
-*   **결과**: 프로젝트 루트에 최종 [report.md](file:///C:/Users/JMG/Desktop/skala/gray-taxi-data/report.md) 문서가 생성 및 업데이트됩니다.
+---
+
+## 👥 팀 구성 및 역할
+
+| 담당 | 원래 작업 | 최종 반영 |
+| :--- | :--- | :--- |
+| sangyoon | 데이터 전처리, Pandas/Polars 로딩 비교, 정체예측·공항요금제 판별 모델 | 전처리·로딩 비교 로직을 `src/preprocess.py`, `src/compare_loading.py`로 통합 반영 |
+| jeongmungi | 시각화 노트북, 통계분석 노트북, 요금예측(Ridge) ML Pipeline, report.py 초안 | **대표 주제로 채택** — `notebooks/`, `src/pipeline.py`, `src/report.py`, `templates/`의 뼈대로 반영 |
+| bonjoon | 높은 팁 여부 예측 (RandomForest) | 최종 리포트에서는 생략 (`trash/pipeline/bonjoon/`에 원본 보존) |
+| heewon | 기술통계·상관계수·t-test | 최종 리포트에서는 생략 (`trash/visualize/heewon/`에 원본 보존) |
+| heeyoon | Seaborn/Plotly 시각화 | 최종 리포트에서는 생략 (`trash/visualize/heeyoon/`에 원본 보존) |
+
+팀 최종 산출물은 **요금 예측 하나의 주제로 수렴**하도록 결정되어, 나머지 개별 분석(높은 팁 예측, 정체예측, 공항요금제 판별)은 `report.md`에 포함하지 않았습니다. 해당 코드는 `trash/`에 원형 그대로 보존되어 있습니다.

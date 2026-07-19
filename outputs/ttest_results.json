@@ -1,0 +1,50 @@
+[
+  {
+    "label": "평일 vs 주말 요금(total_amount)",
+    "group_col": "is_weekend",
+    "value_col": "total_amount",
+    "group_a": "0",
+    "group_b": "1",
+    "mean_a": 30.082013382163712,
+    "mean_b": 28.72564646249054,
+    "n_a": 2020600,
+    "n_b": 857397,
+    "t_stat": 45.905809865396726,
+    "p_value": 0.0,
+    "alpha": 0.05,
+    "rejected": true,
+    "conclusion": "p-value(0) < 유의수준(0.05)이므로 귀무가설을 기각합니다. 두 그룹의 'total_amount' 평균에는 통계적으로 유의미한 차이가 존재합니다."
+  },
+  {
+    "label": "평일 vs 주말 평균 속도(average_speed_mph)",
+    "group_col": "is_weekend",
+    "value_col": "average_speed_mph",
+    "group_a": "0",
+    "group_b": "1",
+    "mean_a": 9.649692561986353,
+    "mean_b": 11.00440927220106,
+    "n_a": 2020600,
+    "n_b": 857397,
+    "t_stat": -168.20256468807133,
+    "p_value": 0.0,
+    "alpha": 0.05,
+    "rejected": true,
+    "conclusion": "p-value(0) < 유의수준(0.05)이므로 귀무가설을 기각합니다. 두 그룹의 'average_speed_mph' 평균에는 통계적으로 유의미한 차이가 존재합니다."
+  },
+  {
+    "label": "낮 vs 심야 평균 팁(tip_amount)",
+    "group_col": "time_period",
+    "value_col": "tip_amount",
+    "group_a": "daytime",
+    "group_b": "night",
+    "mean_a": 4.015261468975,
+    "mean_b": 3.8495365955543552,
+    "n_a": 1352780,
+    "n_b": 473992,
+    "t_stat": 23.626196261919127,
+    "p_value": 2.2717512561707046e-123,
+    "alpha": 0.05,
+    "rejected": true,
+    "conclusion": "p-value(2.27e-123) < 유의수준(0.05)이므로 귀무가설을 기각합니다. 두 그룹의 'tip_amount' 평균에는 통계적으로 유의미한 차이가 존재합니다."
+  }
+]
